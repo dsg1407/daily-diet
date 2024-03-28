@@ -10,6 +10,9 @@ export declare global {
       edit: {
         meal: string
       }
+      feedback: {
+        type: 'positive' | 'negative'
+      }
     }
   }
 }

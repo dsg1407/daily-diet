@@ -19,13 +19,14 @@ import {
 import { Highlight } from '@/components/Highlight'
 import { Button } from '@/components/Button'
 import { Filter } from '@/components/Filter'
+import { Alert } from 'react-native'
 
 export function AddNewMeal() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [mealDate, setMealDate] = useState('')
   const [mealTime, setMealTime] = useState('')
-  const [onDiet, setOnDiet] = useState('')
+  const [onDiet, setOnDiet] = useState<'positive' | 'negative'>()
 
   const [date, setDate] = useState(new Date())
   const [show, setShow] = useState(false)
@@ -49,6 +50,17 @@ export function AddNewMeal() {
   function dateInputFocus(mode: 'date' | 'time') {
     setMode(mode)
     setShow(true)
+  }
+
+  function handleSubmit() {
+    if (!name || !description || !mealDate || !mealTime || !onDiet) {
+      Alert.alert(
+        'Informações do prato',
+        'Necessário cadastrar todos os campos.'
+      )
+      return
+    }
+    navigation.navigate('feedback', { type: onDiet as 'positive' | 'negative' })
   }
 
   return (
@@ -115,16 +127,16 @@ export function AddNewMeal() {
                   <Filter
                     title="Sim"
                     type="Sim"
-                    isActive={onDiet === 'Sim'}
-                    onPress={() => setOnDiet('Sim')}
+                    isActive={onDiet === 'positive'}
+                    onPress={() => setOnDiet('positive')}
                   />
                 </FormGroup>
                 <FormGroup>
                   <Filter
                     title="Não"
                     type="Não"
-                    isActive={onDiet === 'Não'}
-                    onPress={() => setOnDiet('Não')}
+                    isActive={onDiet === 'negative'}
+                    onPress={() => setOnDiet('negative')}
                   />
                 </FormGroup>
               </FormRow>
@@ -132,7 +144,7 @@ export function AddNewMeal() {
           </FormRow>
         </FormBlock>
 
-        <Button title="Cadastrar refeição" />
+        <Button title="Cadastrar refeição" onPress={handleSubmit} />
       </BodyContainer>
     </Container>
   )
