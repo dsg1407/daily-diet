@@ -2,7 +2,7 @@ import styled, { css } from 'styled-components/native'
 import { Circle } from 'phosphor-react-native'
 
 type IconProps = {
-  type: 'yes' | 'no'
+  type: 'positive' | 'negative'
 }
 
 export const Container = styled.TouchableOpacity`
@@ -50,7 +50,7 @@ export const DietIcon = styled(Circle).attrs<IconProps>(({ theme, type }) => ({
   size: 14,
   weight: 'fill',
   color:
-    type === 'yes'
+    type === 'positive'
       ? theme.COLORS.PRODUCT.GREEN_MID
       : theme.COLORS.PRODUCT.RED_MID,
 }))``

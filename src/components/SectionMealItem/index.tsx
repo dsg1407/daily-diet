@@ -4,7 +4,7 @@ import { Container, DietIcon, Divider, Name, Time } from './styles'
 type Props = TouchableOpacityProps & {
   time: string
   mealName: string
-  onDiet: 'yes' | 'no'
+  onDiet: 'positive' | 'negative'
 }
 export function SectionMealItem({ time, mealName, onDiet, ...rest }: Props) {
   return (
