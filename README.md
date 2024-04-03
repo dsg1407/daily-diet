@@ -4,7 +4,7 @@
 
 <br>
 <p align="center">
-  <img alt="App Cover" src="./.github/cover.png" width="100%">
+  <img alt="App Cover" src=".github/Cover.png" width="100%">
 </p>
 
 <br>
