@@ -1,5 +1,14 @@
-import { useEffect, useState } from 'react'
-import { useRoute, useNavigation } from '@react-navigation/native'
+import { useCallback, useState } from 'react'
+import { Alert } from 'react-native'
+import {
+  useFocusEffect,
+  useRoute,
+  useNavigation,
+} from '@react-navigation/native'
+
+import { MealStorageDTO } from '@/storage/meal/MealStorageDTO'
+import { mealsGetAll } from '@/storage/meal/mealsGetAll'
+import { mealRemove } from '@/storage/meal/mealRemove'
 
 import {
   BackButton,
@@ -18,51 +27,102 @@ import {
   TitleXS,
 } from './styles'
 
-import { MealProps } from '@/screens/Home'
 import { Highlight } from '@/components/Highlight'
 import { Button } from '@/components/Button'
 
-type RouteParams = MealTypeProps & {
-  mealName: string
+type RouteParams = {
+  id: string
 }
 
 export function MealDescription() {
-  const [mealDescription, setMealDescription] = useState<MealProps>()
+  const [mealDescription, setMealDescription] = useState<MealStorageDTO>()
 
   const navigation = useNavigation()
   const route = useRoute()
-  const { type, mealName } = route.params as RouteParams
+  const { id } = route.params as RouteParams
 
-  useEffect(() => {}, [])
+  async function fetchMealData() {
+    const meals = await mealsGetAll()
+    const mealInfo = meals.filter((meal) => meal.id === id)[0]
+
+    setMealDescription(mealInfo)
+  }
+
+  async function mealDelete() {
+    try {
+      await mealRemove(id)
+      navigation.navigate('home')
+    } catch (error) {
+      console.log(error)
+      Alert.alert('Remover refeição', 'Não foi possível remover a refeição.')
+    }
+  }
+
+  function handleBackButton() {
+    navigation.navigate('home')
+  }
+
+  function handleEditButton() {
+    navigation.navigate('new', { mealRoute: 'edit', id })
+  }
+
+  function handleDeleteButton() {
+    Alert.alert(
+      'Deseja realmente excluir o registro da refeição ?',
+      undefined,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sim, excluir', onPress: () => mealDelete() },
+      ]
+    )
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMealData()
+    }, [])
+  )
 
   return (
     <Container>
-      <HeaderContainer type={type}>
-        <BackButton onPress={() => navigation.navigate('home')}>
+      <HeaderContainer type={mealDescription?.onDiet}>
+        <BackButton onPress={handleBackButton}>
           <BackIcon />
         </BackButton>
         <Highlight title="Refeição" size="S" />
       </HeaderContainer>
       <BodyContainer>
         <TextBlock>
-          <TitleS>Sanduíche</TitleS>
-          <Text>
-            Sanduíche de pão integral com atum e salada de alface e tomate
-          </Text>
+          <TitleS>{mealDescription?.name}</TitleS>
+          <Text>{mealDescription?.description}</Text>
         </TextBlock>
         <TextBlock>
           <TitleXS>Data e hora</TitleXS>
-          <Text>12/08/2022 às 16:00</Text>
+          <Text>{`${mealDescription?.date.toLocaleDateString(
+            'pt-BR'
+          )} às ${mealDescription?.date.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}`}</Text>
         </TextBlock>
         <MealStatus>
-          <MealStatusIcon type={type} />
+          <MealStatusIcon type={mealDescription?.onDiet} />
           <MealStatusText>
-            {type === 'positive' ? 'dentro' : 'fora'} da dieta
+            {mealDescription?.onDiet === 'positive' ? 'dentro' : 'fora'} da
+            dieta
           </MealStatusText>
         </MealStatus>
         <ButtonBlock>
-          <Button title="Editar Refeição" type="edit" />
-          <Button title="Excluir Refeição" type="delete" />
+          <Button
+            title="Editar Refeição"
+            type="edit"
+            onPress={handleEditButton}
+          />
+          <Button
+            title="Excluir Refeição"
+            type="delete"
+            onPress={handleDeleteButton}
+          />
         </ButtonBlock>
       </BodyContainer>
     </Container>

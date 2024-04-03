@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 import { Alert, SectionList } from 'react-native'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
+
+import { mealsGetAll } from '@/storage/meal/mealsGetAll'
+
 import {
   Container,
   ImageBlock,
@@ -15,11 +18,14 @@ import {
 import { Button } from '@/components/Button'
 import { Highlight } from '@/components/Highlight'
 import { SectionMealItem } from '@/components/SectionMealItem'
+import { ListEmpty } from '@/components/ListEmpty'
+import { Loading } from '@/components/Loading'
 
 import LogoImg from '@/assets/logo.png'
 import ProfileImg from '@/assets/profile.png'
 
 export type MealProps = {
+  id: string
   name: string
   description: string
   date: Date
@@ -31,46 +37,8 @@ type MealSectionItemProps = {
   data: MealProps[]
 }
 
-const mealsRegistered = [
-  {
-    date: new Date(2022, 8, 12, 16, 0),
-    description: 'Whey Protein com leite',
-    name: 'Whey Protein com leite Whey Protein com leite Whey Protein com leite',
-    onDiet: 'positive',
-  },
-  {
-    date: new Date(2022, 8, 12, 20, 0),
-    description: 'X-tudo com tudo dentro',
-    name: 'X-tudo',
-    onDiet: 'negative',
-  },
-  {
-    date: new Date(2022, 8, 12, 12, 30),
-    description: 'Salada cesar com frango',
-    name: 'Salada cesar com frango',
-    onDiet: 'positive',
-  },
-  {
-    date: new Date(2022, 8, 11, 20, 0),
-    description: 'X-tudo com tudo dentro',
-    name: 'X-tudo',
-    onDiet: 'positive',
-  },
-  {
-    date: new Date(2022, 8, 11, 16, 0),
-    description: 'Whey Protein com leite',
-    name: 'Whey Protein com leite Whey Protein com leite Whey Protein com leite',
-    onDiet: 'negative',
-  },
-  {
-    date: new Date(2022, 8, 11, 12, 30),
-    description: 'Salada cesar com frango',
-    name: 'Salada cesar com frango',
-    onDiet: 'positive',
-  },
-] as MealProps[]
-
 export function Home() {
+  const [isLoading, setIsLoading] = useState(true)
   const [mealsData, setMealsData] = useState<MealProps[]>([])
   const [mealsSection, setMealsSection] = useState<MealSectionItemProps[]>([])
   const [positiveMeals, setPositiveMeals] = useState(0)
@@ -81,9 +49,13 @@ export function Home() {
 
   async function fetchMealsData() {
     try {
+      setIsLoading(true)
+      const mealsRegistered = await mealsGetAll()
+
       mealsRegistered.sort((a, b) => {
         return Number(b.date) - Number(a.date)
       })
+
       let sectionTitleArray = [] as string[]
       mealsRegistered.forEach(
         (meal) =>
@@ -112,6 +84,8 @@ export function Home() {
     } catch (error) {
       Alert.alert('Refeições', 'Não foi possível carregar as refeições.')
       console.log(error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -138,11 +112,11 @@ export function Home() {
   }
 
   function handleCreateNewButton() {
-    navigation.navigate('new')
+    navigation.navigate('new', { mealRoute: 'add' })
   }
 
-  function handleMealDescriptionButton(item: MealProps) {
-    console.log('openMealDescriptionButton click', item)
+  function handleMealDescriptionButton(id: string) {
+    navigation.navigate('mealDescription', { id })
   }
 
   useFocusEffect(
@@ -180,27 +154,34 @@ export function Home() {
         type="add"
         onPress={handleCreateNewButton}
       />
-
-      <SectionList
-        sections={mealsSection}
-        keyExtractor={(item) => `${item.date}-${item.name}`}
-        renderItem={({ item }) => (
-          <SectionMealItem
-            time={item.date.toLocaleTimeString('pt-BR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-            mealName={item.name}
-            onDiet={item.onDiet}
-            onPress={() => handleMealDescriptionButton(item)}
-          />
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <MealSectionHeader>{title.replaceAll('/', '.')}</MealSectionHeader>
-        )}
-        stickySectionHeadersEnabled={false}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <SectionList
+          sections={mealsSection}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <SectionMealItem
+              time={item.date.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+              mealName={item.name}
+              onDiet={item.onDiet}
+              onPress={() => handleMealDescriptionButton(item.id)}
+            />
+          )}
+          renderSectionHeader={({ section: { title } }) => (
+            <MealSectionHeader>{title.replaceAll('/', '.')}</MealSectionHeader>
+          )}
+          stickySectionHeadersEnabled={false}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+          ListEmptyComponent={() => (
+            <ListEmpty message={`Sem refeições cadastradas`} />
+          )}
+        />
+      )}
     </Container>
   )
 }

@@ -1,6 +1,13 @@
-import { useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useState, useEffect } from 'react'
+import { Alert } from 'react-native'
+import { useRoute, useNavigation } from '@react-navigation/native'
 import DateTimePicker from 'react-native-modal-datetime-picker'
+import { randomUUID } from 'expo-crypto'
+
+import { MealStorageDTO } from '@/storage/meal/MealStorageDTO'
+import { mealCreate } from '@/storage/meal/mealCreate'
+import { mealsGetAll } from '@/storage/meal/mealsGetAll'
+import { mealEdit } from '@/storage/meal/mealEdit'
 
 import {
   BackButton,
@@ -16,12 +23,17 @@ import {
   Label,
 } from './style'
 
+import { AppError } from '@/utils/AppError'
 import { Highlight } from '@/components/Highlight'
 import { Button } from '@/components/Button'
 import { Filter } from '@/components/Filter'
-import { Alert } from 'react-native'
 
-export function AddNewMeal() {
+type RouteParams = {
+  mealRoute: 'add' | 'edit'
+  id?: string
+}
+
+export function NewMeal() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [mealDate, setMealDate] = useState('')
@@ -32,7 +44,9 @@ export function AddNewMeal() {
   const [show, setShow] = useState(false)
   const [mode, setMode] = useState<'date' | 'time'>('date')
 
+  const route = useRoute()
   const navigation = useNavigation()
+  const { mealRoute, id } = route.params as RouteParams
 
   function handleConfirm(selectDate: Date) {
     setMealDate(selectDate.toLocaleDateString('pt-BR'))
@@ -52,16 +66,74 @@ export function AddNewMeal() {
     setShow(true)
   }
 
-  function handleSubmit() {
-    if (!name || !description || !mealDate || !mealTime || !onDiet) {
+  async function fetchMealData() {
+    const meals = await mealsGetAll()
+    const mealInfo = meals.filter((meal) => meal.id === id)[0]
+
+    setName(mealInfo.name)
+    setDescription(mealInfo.description)
+    setDate(mealInfo.date)
+    setMealDate(mealInfo.date.toLocaleDateString('pt-BR'))
+    setMealTime(
+      mealInfo.date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    )
+    setOnDiet(mealInfo.onDiet)
+  }
+
+  async function handleSubmit() {
+    if (
+      !name.trim() ||
+      !description.trim() ||
+      !mealDate ||
+      !mealTime ||
+      !onDiet
+    ) {
       Alert.alert(
         'Informações do prato',
         'Necessário cadastrar todos os campos.'
       )
       return
     }
-    navigation.navigate('feedback', { type: onDiet as 'positive' | 'negative' })
+
+    try {
+      const newMeal = {
+        id: mealRoute === 'add' ? randomUUID() : id,
+        name: name.trim(),
+        description: description.trim(),
+        date,
+        onDiet,
+      } as MealStorageDTO
+
+      if (mealRoute === 'add') {
+        await mealCreate(newMeal)
+        navigation.navigate('feedback', {
+          type: onDiet as 'positive' | 'negative',
+        })
+      } else if (mealRoute === 'edit') {
+        await mealEdit(newMeal)
+        navigation.navigate('mealDescription', { id: id as string })
+      }
+    } catch (error) {
+      if (error instanceof AppError) {
+        Alert.alert('Nova Refeição', error.message)
+      } else {
+        Alert.alert(
+          'Nova Refeição',
+          'Não foi possível criar o cadastro da nova refeição.'
+        )
+        console.log(error)
+      }
+    }
   }
+
+  useEffect(() => {
+    if (mealRoute === 'edit') {
+      fetchMealData()
+    }
+  }, [])
 
   return (
     <Container>
@@ -69,7 +141,10 @@ export function AddNewMeal() {
         <BackButton onPress={() => navigation.navigate('home')}>
           <BackIcon />
         </BackButton>
-        <Highlight title="Nova refeição" size="S" />
+        <Highlight
+          title={mealRoute === 'add' ? 'Nova refeição' : 'Editar refeição'}
+          size="S"
+        />
       </HeaderContainer>
       <BodyContainer>
         <FormBlock>
@@ -144,7 +219,12 @@ export function AddNewMeal() {
           </FormRow>
         </FormBlock>
 
-        <Button title="Cadastrar refeição" onPress={handleSubmit} />
+        <Button
+          title={
+            mealRoute === 'add' ? 'Cadastrar refeição' : 'Salvar alterações'
+          }
+          onPress={handleSubmit}
+        />
       </BodyContainer>
     </Container>
   )

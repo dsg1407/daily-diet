@@ -9,12 +9,13 @@ export declare global {
         positiveIndex: number
       }
       mealDescription: {
-        mealName: string
+        id: string
       }
-      new: undefined
-      edit: {
-        meal: string
+      new: {
+        mealRoute: 'add' | 'edit'
+        id?: string
       }
+
       feedback: {
         type: 'positive' | 'negative'
       }
