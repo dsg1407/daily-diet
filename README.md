@@ -56,6 +56,13 @@ Here are the packages used in this project.
 
 ## 📱 Application Image
 
+
+
+https://github.com/dsg1407/daily-diet/assets/42188852/043c176b-7d1e-4f1d-8fb3-096cbfea6e11
+
+
+
+
 ---
 
 ## 💻 Getting started
